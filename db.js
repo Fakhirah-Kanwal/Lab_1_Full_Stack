@@ -26,5 +26,4 @@ const connectDB = async () => {
         process.exit(1);
     }
 };
-// Call to the function when runs
-connectDB();
+module.exports = connectDB;  
