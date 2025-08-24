@@ -1,66 +1,77 @@
-const connectDB = require('./db');
-const Recipes = require('./models/recipes');
+// populateRecipes.js
+require('dotenv').config();
+const mongoose = require('mongoose');
+const connectDB = require('./db');        // uses process.env.CONNECTION_URL
+const Dish = require('./models/recipes'); // your existing model exports 'Recipes'
 
-const populateRecipes = [
+const seed = [
   {
-    name: "Qabli Pulao",
-    ingredients: ["Rice", "Beef", "Spices", "Yogurt", "Meet tender", "Milk", "Salt"],
-    preparationSteps: ["Marinate beef", "Cook beef", "Add rice", "Mix both and steam"],
+    name: "Qabli Pulao (Family Favorite)",
+    ingredients: ["Rice", "Beef", "Carrots", "Raisins", "Yogurt", "Spices", "Salt"],
+    preparationSteps: [
+      "Marinate beef", "Cook beef until tender",
+      "Parboil rice", "Layer with beef, carrots & raisins", "Steam"
+    ],
     cookingTime: 90,
-    origin: "Pakistan",
-    serving: 7,
+    origin: "Afghan/Pakistani",
+    spiceLevel: "medium"
   },
   {
-    name: "chicken Biryani",
-    ingredients: ["Polao rice", "Chicken" ,"Onion", "Green chili", "Spices"],
-    preparationSteps: ["Add onion and spices", "Add rice and chicken", "Mix everything and steam with water"],
-    cookingTime: 45,
-    origin: "Pakistan",
-    serving: 5,
+    name: "Chicken Biryani",
+    ingredients: ["Basmati Rice", "Chicken", "Onion", "Tomato", "Green Chili", "Biryani Masala"],
+    preparationSteps: ["Fry onions", "Cook chicken with spices", "Layer with rice", "Steam (dum)"],
+    cookingTime: 75,
+    origin: "Pakistani",
+    spiceLevel: "hot"
   },
   {
-    name: "Tabuli",
-    ingredients: ["Parsley", "Tomato", "Cocumber", "Lemon", "Sesame seeds"],
-    preparationSteps: ["chop tomato, cocumber and parsley", "Mix Everything", "Add lemon juice at the end"],
-    cookingTime: 0,
-    origin: "Syrian",
-    serving: 5,
+    name: "Pasta Aglio e Olio",
+    ingredients: ["Spaghetti", "Garlic", "Olive Oil", "Chili Flakes", "Parsley", "Salt"],
+    preparationSteps: ["Boil pasta", "Infuse oil with garlic", "Toss with pasta & chili", "Finish with parsley"],
+    cookingTime: 20,
+    origin: "Italian",
+    spiceLevel: "mild"
   },
   {
-    name: "Ramen",
-    ingredients: ["Noodles", "Broth", "Egg", "beef", "Scallions"],
-    preparationSteps: ["Make broth", "Boil noodles", "Assemble bowl", "Garnish it to your liking"],
-    cookingTime: 45,
-    origin: "Korean",
-    serving: 5,
+    name: "Veggie Stir-Fry",
+    ingredients: ["Broccoli", "Bell Peppers", "Carrot", "Soy Sauce", "Ginger", "Garlic"],
+    preparationSteps: ["Prep veggies", "Stir-fry aromatics", "Add veggies", "Season & toss"],
+    cookingTime: 15,
+    origin: "Fusion",
+    spiceLevel: "medium"
   },
   {
-    name: "Lentin Soup",
-    ingredients: ["Cooked Lentil", "Corriander powder", "Vegetable oil", "Salt", "Black Pepper", "Water","Parsley"],
-    preparationSteps: ["Put everything togather and bring it to boil", "Add parsley for garnishing"],
+    name: "Shakshuka",
+    ingredients: ["Eggs", "Tomatoes", "Onion", "Bell Pepper", "Cumin", "Paprika"],
+    preparationSteps: ["Cook sauce", "Make wells", "Add eggs", "Cover & set whites"],
     cookingTime: 30,
-    origin: "Syrian",
-    serving: 6,
+    origin: "Middle Eastern",
+    spiceLevel: "mild"
   }
 ];
 
-const connectSeed = async () => {
+(async () => {
+  try {
     await connectDB();
-    try {
-        const existingDishes = await Recipes.find();
-        if (existingDishes.length === 0) {
-          await Recipes.insertMany(populateRecipes);
-          console.log('Sample dishes are inserted!');
-        } else {
-          console.log('Dishes already exist.');
-        }
-    } catch (error) {
-        console.error('Error inserting dishes:a', error.message);
-        process.exit(1);
-    } finally {
-        process.exit();
+
+    const count = await Dish.countDocuments();
+    if (count > 0) {
+      console.log(`Dishes already exist (${count}). Skipping seeding.`);
+      return;
     }
 
-};
+    // IMPORTANT: await insertMany and use the returned docs
+    const insertedDocs = await Dish.insertMany(seed, { ordered: true });
+    const ids = insertedDocs.map(d => d._id.toString());
 
-connectSeed();
+    console.log('Sample dishes are inserted!');
+    console.log('Inserted IDs:', ids);
+
+  } catch (err) {
+    console.error('Seed error:', err.message);
+  } finally {
+    // close gracefully
+    await mongoose.connection.close().catch(() => {});
+    process.exit(0);
+  }
+})();
